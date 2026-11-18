@@ -1,0 +1,13 @@
+# Qwen3.5 needs a very recent transformers (model_type "qwen3_5"). Install from main if the PyPI release is too old:
+#   pip install -U "git+https://github.com/huggingface/transformers.git@main"
+transformers>=4.57
+peft>=0.14
+accelerate>=1.0
+bitsandbytes>=0.45        # QLoRA (Windows wheels exist for recent versions; Linux/Kaggle OK)
+matplotlib>=3.8
+psutil>=5.9
+pillow
+torchvision               # required by the Qwen3.5 processor classes per the model card
+# torch: install the CUDA build from https://pytorch.org/get-started/locally/ (Kaggle already has it)
+# Optional, strongly recommended for speed on Linux/Kaggle (Qwen3.5 linear-attention kernels):
+#   pip install flash-linear-attention causal-conv1d
