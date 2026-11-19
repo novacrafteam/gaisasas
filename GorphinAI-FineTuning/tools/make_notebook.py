@@ -17,9 +17,11 @@ REPO_URL     = "https://github.com/YOUR_USER/GorphinAI-FineTuning.git"   # <- yo
 BRANCH       = "main"
 PRIVATE_REPO = False      # True -> a GitHub token is requested (hidden input) or read from Kaggle Secret GITHUB_TOKEN
 DATASET_COUNT = 600       # examples to generate if the repo has no data/train.jsonl
-NUM_EPOCHS   = 2
-RESUME       = False      # True -> continue from the last checkpoint in /kaggle/working/outputs/checkpoints
-RESTORE_FROM = ""         # optional: path of a previous run's outputs dir attached as Kaggle input, e.g. /kaggle/input/my-run/outputs
+NUM_EPOCHS    = 2
+RESUME        = False      # True -> continue from the last checkpoint in /kaggle/working/outputs/checkpoints
+RESTORE_FROM  = ""         # optional: path of a previous run's outputs dir attached as Kaggle input, e.g. /kaggle/input/my-run/outputs
+EXPORT_MERGED = True       # True -> also merge adapter into base weights (.safetensors + .pt)
+EXPORT_GGUF   = True       # True -> also convert to .gguf via llama.cpp (saved in /kaggle/working/gorphinai.gguf)
 ''')
 code('''
 # ---- 2. GPU / RAM check ----
@@ -39,6 +41,7 @@ code('''
 # ---- 3. Clone the project (token is never printed or saved) ----
 import os, subprocess, getpass, base64, shutil, glob
 BASE = "/kaggle/working" if os.path.exists("/kaggle/working") else os.getcwd()
+os.chdir(BASE)
 DEST = os.path.join(BASE, "repo")
 token = ""
 if PRIVATE_REPO:
@@ -74,10 +77,12 @@ code('''
 # ---- 4. Install dependencies and check compatibility ----
 import subprocess, sys
 def pip(*a): return subprocess.run([sys.executable, "-m", "pip", "install", "-q", *a], capture_output=True, text=True)
-r = pip("-U", "transformers", "peft", "accelerate", "bitsandbytes", "psutil", "matplotlib", "huggingface_hub")
+r = pip("-U", "transformers", "peft", "accelerate", "bitsandbytes", "psutil", "matplotlib", "huggingface_hub", "gguf")
 print(r.stdout[-500:] + r.stderr[-1500:])
-r = pip("flash-linear-attention", "causal-conv1d")      # optional speed-ups for Qwen3.5 linear attention
-print("optional fast kernels:", "installed" if r.returncode == 0 else "not available (training still works, slower)")
+subprocess.run([sys.executable, "-m", "pip", "uninstall", "-y", "torchao"], capture_output=True)  # Kaggle's 0.10.0 breaks peft
+# Optional speed-ups (compiling from source on Kaggle can take several minutes):
+# r = pip("flash-linear-attention", "causal-conv1d")
+# print("optional fast kernels:", "installed" if r.returncode == 0 else "not available (training still works, slower)")
 
 import torch, transformers, peft
 print("torch", torch.__version__, "| transformers", transformers.__version__, "| peft", peft.__version__, "| CUDA:", torch.cuda.is_available())
@@ -157,10 +162,17 @@ from chat_ui import notebook_ui
 session = notebook_ui(f"{OUT}/adapter")
 ''')
 code('''
-# ---- 11. Archive the adapter for download ----
-import shutil
-z = shutil.make_archive("/kaggle/working/gorphinai_adapter", "zip", root_dir=f"{OUT}/adapter")
-print("Download from the Output tab:", z)
+# ---- 11. Export (.safetensors + .pt + .gguf) and archive for download ----
+import subprocess, sys, shutil
+cmd = [sys.executable, "export_model.py", "--adapter", f"{OUT}/adapter", "--zip", "--pt"]
+if EXPORT_MERGED or EXPORT_GGUF:
+    cmd += ["--merge", f"{OUT}/merged"]
+if EXPORT_GGUF:
+    cmd += ["--gguf", "/kaggle/working/gorphinai.gguf", "--fetch-llama-cpp"]
+r = subprocess.run(cmd, capture_output=True, text=True)
+print(r.stdout[-2500:]); print(r.stderr[-1500:] if r.returncode else "")
+shutil.copy2(f"{OUT}/gorphinai_adapter.zip", "/kaggle/working/gorphinai_adapter.zip")
+print("Ready in /kaggle/working (Output tab): gorphinai_adapter.zip" + (" + gorphinai.gguf" if EXPORT_GGUF else ""))
 ''')
 
 nb = {"cells": cells, "metadata": {"kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"},

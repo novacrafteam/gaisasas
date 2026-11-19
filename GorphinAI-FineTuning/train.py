@@ -40,13 +40,15 @@ def parse_args(argv=None):
                       ("model_id", str), ("revision", str)]:
         ap.add_argument("--" + name.replace("_", "-"), dest=name, type=typ, default=None)
     ap.add_argument("--no-gradient-checkpointing", dest="gradient_checkpointing", action="store_false", default=None)
+    ap.add_argument("--export-merged", action="store_true", help="after training, merge adapter + save .safetensors & .pt")
+    ap.add_argument("--export-gguf", action="store_true", help="after training, also export .gguf via llama.cpp")
     return ap.parse_args(argv)
 
 
 def build_config(args) -> TrainConfig:
     cfg = TrainConfig.load(args.config) if args.config else preset(args.preset)
     for k, v in vars(args).items():
-        if k in {"preset", "config", "resume", "dry_run"} or v is None:
+        if k in {"preset", "config", "resume", "dry_run", "export_merged", "export_gguf"} or v is None:
             continue
         if k == "qlora":
             cfg.use_qlora = v
@@ -237,6 +239,12 @@ def main(argv=None) -> int:
                 p.data = p.data.float()
 
     ckpt_dir = out_dir / "checkpoints"
+    import inspect
+    if "warmup_ratio" in inspect.signature(TrainingArguments.__init__).parameters:
+        warmup_kw = {"warmup_ratio": cfg.warmup_ratio}
+    else:
+        est_steps = max(1, len(train_ds) / (cfg.per_device_train_batch_size * cfg.gradient_accumulation_steps) * cfg.num_train_epochs)
+        warmup_kw = {"warmup_steps": max(1, int(est_steps * cfg.warmup_ratio))} if cfg.warmup_ratio > 0 else {}
     targs = TrainingArguments(
         output_dir=str(ckpt_dir),
         per_device_train_batch_size=cfg.per_device_train_batch_size,
@@ -244,7 +252,7 @@ def main(argv=None) -> int:
         gradient_accumulation_steps=cfg.gradient_accumulation_steps,
         learning_rate=cfg.learning_rate,
         num_train_epochs=cfg.num_train_epochs,
-        warmup_ratio=cfg.warmup_ratio,
+        **warmup_kw,
         weight_decay=cfg.weight_decay,
         lr_scheduler_type=cfg.lr_scheduler_type,
         max_grad_norm=cfg.max_grad_norm,
@@ -290,6 +298,12 @@ def main(argv=None) -> int:
 
     append_metric(metrics_path, {"event": "stage", "stage": "saving"})
     model.save_pretrained(str(adapter_dir))
+    try:
+        from peft import get_peft_model_state_dict
+
+        torch.save(get_peft_model_state_dict(model), str(adapter_dir / "adapter_model.pt"))
+    except Exception as e:  # noqa: BLE001
+        log.warning("Could not save adapter_model.pt: %s", e)
     tok.save_pretrained(str(adapter_dir))
     cfg.save(adapter_dir / "train_config.json")
     if status == "stopped":
@@ -301,6 +315,18 @@ def main(argv=None) -> int:
                                          "max_steps": trainer.state.max_steps, "eval_loss": final.get("eval_loss")})
         except Exception as e:  # noqa: BLE001
             log.warning("Final evaluation failed: %s", e)
+        if args.export_merged or args.export_gguf:
+            try:
+                import export_model
+
+                ex_args = ["--adapter", str(adapter_dir), "--pt"]
+                if args.export_merged or args.export_gguf:
+                    ex_args += ["--merge", str(out_dir / "merged")]
+                if args.export_gguf:
+                    ex_args += ["--gguf", str(out_dir / "gorphinai.gguf"), "--fetch-llama-cpp"]
+                export_model.main(ex_args)
+            except Exception as e:  # noqa: BLE001
+                log.warning("Extra export (.pt/.gguf) failed (adapter itself is safe in %s): %s", adapter_dir, e)
     append_metric(metrics_path, {"event": "stage", "stage": status})
     log.info("Adapter saved to %s", adapter_dir)
     return 0

@@ -166,7 +166,8 @@ def notebook_ui(adapter: str | None, use_qlora: bool = False, feedback_path: str
     from IPython.display import display
 
     s = ChatSession(adapter, use_qlora, feedback_path)
-    out = w.Output(layout={"border": "1px solid #ccc", "height": "320px", "overflow_y": "auto"})
+    out = w.Output(layout={"width": "100%"})
+    out_box = w.Box([out], layout={"border": "1px solid #ccc", "height": "320px", "overflow_y": "auto", "width": "98%", "padding": "6px"})
     box = w.Textarea(placeholder="Type any message...", layout={"width": "98%", "height": "70px"})
     lang = w.Dropdown(options=["uk", "ru", "en"], value="en", description="Language")
     temp = w.FloatSlider(value=0.7, min=0, max=1.5, step=0.05, description="Temperature")
@@ -206,7 +207,7 @@ def notebook_ui(adapter: str | None, use_qlora: bool = False, feedback_path: str
     good.on_click(on_rate(True))
     bad.on_click(on_rate(False))
     new.on_click(on_new)
-    display(w.VBox([out, box, w.HBox([send, good, bad, new]), w.HBox([lang, temp]), w.HBox([topp, mnt, rep])]))
+    display(w.VBox([out_box, box, w.HBox([send, good, bad, new]), w.HBox([lang, temp]), w.HBox([topp, mnt, rep])]))
     return s
 
 
