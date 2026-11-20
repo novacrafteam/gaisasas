@@ -159,7 +159,50 @@ def m_discount(rng, lang):
     return q, a
 
 
-MATH_GENS = [m_linear, m_percent, m_rect, m_speed, m_avg, m_gcd, m_frac, m_discount]
+def m_quadratic(rng, lang):
+    r1, r2 = rng.randint(-9, 9), rng.randint(-9, 9)
+    while r1 == 0 or r2 == 0:
+        r1, r2 = rng.randint(-9, 9), rng.randint(-9, 9)
+    b, c = -(r1 + r2), r1 * r2
+    bs = f"+ {b}x" if b > 0 else (f"- {abs(b)}x" if b < 0 else "")
+    cs = f"+ {c}" if c > 0 else f"- {abs(c)}"
+    eq = f"x² {bs} {cs} = 0".replace("  ", " ")
+    D = b * b - 4 * c
+    roots = str(r1) if r1 == r2 else f"{min(r1, r2)} і {max(r1, r2)}"
+    roots_ru = str(r1) if r1 == r2 else f"{min(r1, r2)} и {max(r1, r2)}"
+    roots_en = str(r1) if r1 == r2 else f"{min(r1, r2)} and {max(r1, r2)}"
+    q = {"uk": f"Розв'яжи квадратне рівняння: {eq}", "ru": f"Реши квадратное уравнение: {eq}", "en": f"Solve the quadratic equation: {eq}"}[lang]
+    a = {
+        "uk": f"Дискримінант D = ({b})² - 4·1·({c}) = {D}. Корені: {roots}.",
+        "ru": f"Дискриминант D = ({b})² - 4·1·({c}) = {D}. Корни: {roots_ru}.",
+        "en": f"Discriminant D = ({b})² - 4·1·({c}) = {D}. Roots: {roots_en}.",
+    }[lang]
+    return q, a
+
+
+def m_system(rng, lang):
+    x, y = rng.randint(1, 25), rng.randint(1, 25)
+    s, d = x + y, x - y
+    q = {"uk": f"Сума двох чисел дорівнює {s}, а їхня різниця — {d}. Знайди ці числа.",
+         "ru": f"Сумма двух чисел равна {s}, а их разность — {d}. Найди эти числа.",
+         "en": f"The sum of two numbers is {s} and their difference is {d}. Find both numbers."}[lang]
+    a = {"uk": f"Додаємо рівняння: 2x = {s} + ({d}) = {s+d} → x = {x}. Тоді y = {s} - {x} = {y}. Відповідь: {x} і {y}.",
+         "ru": f"Складываем уравнения: 2x = {s} + ({d}) = {s+d} → x = {x}. Тогда y = {s} - {x} = {y}. Ответ: {x} и {y}.",
+         "en": f"Add the equations: 2x = {s} + ({d}) = {s+d} → x = {x}. Then y = {s} - {x} = {y}. Answer: {x} and {y}."}[lang]
+    return q, a
+
+
+def m_temp(rng, lang):
+    c = rng.choice([-20, -10, -5, 0, 5, 10, 15, 20, 25, 30, 35, 40, 100])
+    f = c * 9 / 5 + 32
+    q = {"uk": f"Переведи {c} °C у градуси Фаренгейта.", "ru": f"Переведи {c} °C в градусы Фаренгейта.", "en": f"Convert {c} °C to Fahrenheit."}[lang]
+    a = {"uk": f"F = C · 9/5 + 32 = {c} · 1.8 + 32 = {f:g} °F.",
+         "ru": f"F = C · 9/5 + 32 = {c} · 1.8 + 32 = {f:g} °F.",
+         "en": f"F = C · 9/5 + 32 = {c} · 1.8 + 32 = {f:g} °F."}[lang]
+    return q, a
+
+
+MATH_GENS = [m_linear, m_percent, m_rect, m_speed, m_avg, m_gcd, m_frac, m_discount, m_quadratic, m_system, m_temp]
 
 
 # ----------------------------------------------------------------------------- logic
@@ -244,13 +287,78 @@ def l_day(rng, lang):
     return q, a
 
 
-LOGIC_GENS = [l_order, l_seq, l_syll, l_day]
+def l_time(rng, lang):
+    h, m = rng.randint(6, 20), rng.choice([0, 10, 15, 20, 25, 30, 40, 45, 50])
+    add = rng.randint(25, 210)
+    tot = h * 60 + m + add
+    nh, nm = (tot // 60) % 24, tot % 60
+    q = {"uk": f"Зараз {h:02d}:{m:02d}. Який час буде через {add} хвилин?",
+         "ru": f"Сейчас {h:02d}:{m:02d}. Который час будет через {add} минут?",
+         "en": f"It is {h:02d}:{m:02d} now. What time will it be in {add} minutes?"}[lang]
+    a = {"uk": f"{add} хв = {add // 60} год {add % 60} хв. Додаємо до {h:02d}:{m:02d} і отримуємо {nh:02d}:{nm:02d}.",
+         "ru": f"{add} мин = {add // 60} ч {add % 60} мин. Прибавляем к {h:02d}:{m:02d} и получаем {nh:02d}:{nm:02d}.",
+         "en": f"{add} min = {add // 60} h {add % 60} min. Adding to {h:02d}:{m:02d} gives {nh:02d}:{nm:02d}."}[lang]
+    return q, a
+
+
+def l_sets(rng, lang):
+    total = rng.randint(25, 45)
+    a_cnt = rng.randint(12, total - 4)
+    b_cnt = rng.randint(10, total - 4)
+    both = rng.randint(max(2, a_cnt + b_cnt - total), min(a_cnt, b_cnt) - 1)
+    union = a_cnt + b_cnt - both
+    neither = total - union
+    q = {"uk": f"У групі {total} студентів. {a_cnt} вивчають Python, {b_cnt} — JavaScript, а {both} — обидві мови. Скільки студентів не вивчають жодної з них?",
+         "ru": f"В группе {total} студентов. {a_cnt} изучают Python, {b_cnt} — JavaScript, а {both} — оба языка. Сколько студентов не изучают ни один из них?",
+         "en": f"In a group of {total} students, {a_cnt} study Python, {b_cnt} study JavaScript, and {both} study both. How many study neither?"}[lang]
+    a = {"uk": f"Хоча б одну мову вивчають {a_cnt} + {b_cnt} - {both} = {union} студентів. Жодної — {total} - {union} = {neither}.",
+         "ru": f"Хотя бы один язык изучают {a_cnt} + {b_cnt} - {both} = {union} студентов. Ни одного — {total} - {union} = {neither}.",
+         "en": f"At least one language: {a_cnt} + {b_cnt} - {both} = {union} students. Neither: {total} - {union} = {neither}."}[lang]
+    return q, a
+
+
+LOGIC_GENS = [l_order, l_seq, l_syll, l_day, l_time, l_sets]
 
 STATIC = {
     "chat": B.CHAT, "programming": B.PROGRAMMING, "science": B.SCIENCE, "technology": B.TECH, "education": B.EDUCATION,
     "text_work": B.TEXT_WORK, "explain": B.EXPLAIN, "analysis": B.ANALYSIS, "problem_solving": B.PROBLEM, "honesty": B.HONESTY,
 }
 BRIDGE = {"uk": ["А ще питання: ", "Дякую. Тепер інше: ", ""], "ru": ["А ещё вопрос: ", "Спасибо. Теперь другое: ", ""], "en": ["One more question: ", "Thanks. Now something else: ", ""]}
+
+
+def gen_analysis(rng, lang) -> tuple[str, str]:
+    if rng.random() < 0.35:
+        return pick_static(rng, STATIC["analysis"], lang)
+    m1 = rng.choice([80, 100, 120, 150, 200, 250, 300, 400, 500])
+    m2 = int(m1 * rng.choice([1.1, 1.2, 1.25, 1.4, 0.8, 0.9]))
+    m3 = int(m2 * rng.choice([1.1, 1.2, 0.85, 0.9, 1.05]))
+    d12 = (m2 - m1) / m1 * 100
+    d23 = (m3 - m2) / m2 * 100
+    d13 = (m3 - m1) / m1 * 100
+    q = {"uk": f"Проаналізуй показники за три місяці: місяць 1 — {m1}, місяць 2 — {m2}, місяць 3 — {m3}. Який висновок можна зробити?",
+         "ru": f"Проанализируй показатели за три месяца: месяц 1 — {m1}, месяц 2 — {m2}, месяц 3 — {m3}. Какой вывод можно сделать?",
+         "en": f"Analyze these three monthly figures: month 1 = {m1}, month 2 = {m2}, month 3 = {m3}. What can you conclude?"}[lang]
+    a = {"uk": f"Від 1-го до 2-го місяця зміна становить {d12:+.1f}%, від 2-го до 3-го — {d23:+.1f}%. За весь період приріст {d13:+.1f}%. Трьох точок замало для надійного прогнозу — варто врахувати сезонність і зовнішні чинники.",
+         "ru": f"От 1-го ко 2-му месяцу изменение {d12:+.1f}%, от 2-го к 3-му — {d23:+.1f}%. За весь период изменение {d13:+.1f}%. Трёх точек мало для надёжного прогноза — стоит учесть сезонность и внешние факторы.",
+         "en": f"Month 1 to 2 changed by {d12:+.1f}%, and month 2 to 3 by {d23:+.1f}% (overall {d13:+.1f}%). Three points are too few for a reliable forecast — check seasonality and external drivers."}[lang]
+    return q, a
+
+
+def gen_text_work(rng, lang) -> tuple[str, str]:
+    if rng.random() < 0.45:
+        return pick_static(rng, STATIC["text_work"], lang)
+    words_bank = {
+        "uk": ["сонячний день", "швидкий код", "тихий вечір", "новий проєкт", "чиста архітектура", "чіткий план", "спокійна музика"],
+        "ru": ["солнечный день", "быстрый код", "тихий вечер", "новый проект", "чистая архитектура", "чёткий план", "спокойная музыка"],
+        "en": ["sunny morning", "clean code", "quiet evening", "new project", "clear plan", "calm music", "steady progress"],
+    }[lang]
+    items = rng.sample(words_bank, 3)
+    raw = ", ".join(items)
+    q = {"uk": f"Оформи цей перелік як маркований список: {raw}.",
+         "ru": f"Оформи этот перечень как маркированный список: {raw}.",
+         "en": f"Format this list as bullet points: {raw}."}[lang]
+    a = "\n".join(f"- {it}" for it in items)
+    return q, a
 
 
 def one_turn(rng, lang, cat) -> tuple[str, str]:
@@ -262,6 +370,10 @@ def one_turn(rng, lang, cat) -> tuple[str, str]:
         return rng.choice(MATH_GENS)(rng, lang)
     if cat == "logic":
         return rng.choice(LOGIC_GENS)(rng, lang)
+    if cat == "analysis":
+        return gen_analysis(rng, lang)
+    if cat == "text_work":
+        return gen_text_work(rng, lang)
     return pick_static(rng, STATIC[cat], lang)
 
 
@@ -327,14 +439,14 @@ def load_existing(path: Path) -> list[dict]:
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--count", type=int, default=600, help="target total number of examples")
+    ap.add_argument("--count", type=int, default=2400, help="target total number of examples")
     ap.add_argument("--out", default="data/all.jsonl")
     ap.add_argument("--mode", choices=["template", "ai"], default="template")
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--resume", action="store_true", help="continue: keep existing records, generate only the missing ones")
     ap.add_argument("--api-base", default=os.environ.get("GORPHIN_API_BASE"))
     ap.add_argument("--model", default=os.environ.get("GORPHIN_API_MODEL"))
-    ap.add_argument("--max-share", type=float, default=0.15, help="max fraction of one language taken by a single category")
+    ap.add_argument("--max-share", type=float, default=0.22, help="max fraction of one language taken by a single category")
     ap.add_argument("--min-chars", type=int, default=2)
     ap.add_argument("--max-chars", type=int, default=6000)
     args = ap.parse_args(argv)
@@ -357,14 +469,14 @@ def main(argv=None) -> int:
     per_lang = Counter(r["language"] for r in records)
 
     fails = Counter()
-    attempts, max_attempts = 0, args.count * 60
+    attempts, max_attempts = 0, args.count * 100
     while any(per_lang[l] < per_lang_target[l] for l in LANGS) and attempts < max_attempts:
         attempts += 1
         lang = min(LANGS, key=lambda l: per_lang[l] / per_lang_target[l])
         if per_lang[lang] >= per_lang_target[lang]:
             continue
         counts = Counter(r["category"] for r in records if r["language"] == lang)
-        open_cats = [c for c in CATEGORIES if fails[(lang, c)] < 40 and counts[c] < max(1, args.max_share * per_lang_target[lang])]  # skip categories out of unique samples
+        open_cats = [c for c in CATEGORIES if fails[(lang, c)] < 100 and counts[c] < max(1, args.max_share * per_lang_target[lang])]  # skip categories out of unique samples
         if not open_cats:
             per_lang_target[lang] = per_lang[lang]
             continue

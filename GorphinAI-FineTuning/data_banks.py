@@ -251,3 +251,27 @@ NAMES = {
     "ru": ["Елена", "Андрей", "Мария", "Тарас", "Ирина", "Борис", "София", "Максим", "Дарья", "Роман"],
     "en": ["Emma", "Liam", "Olivia", "Noah", "Ava", "Lucas", "Mia", "Ethan", "Chloe", "Owen"],
 }
+
+from data_banks_extra import (
+    CHAT_EXTRA,
+    EDUCATION_EXTRA,
+    EXPLAIN_EXTRA,
+    HONESTY_EXTRA,
+    JS_TASKS_EXTRA,
+    PROBLEM_EXTRA,
+    PROGRAMMING_EXTRA,
+    PY_TASKS_EXTRA,
+    SCIENCE_EXTRA,
+    TECH_EXTRA,
+)
+
+CHAT.extend(CHAT_EXTRA)
+PY_TASKS.extend(PY_TASKS_EXTRA)
+JS_TASKS.extend(JS_TASKS_EXTRA)
+PROGRAMMING.extend(PROGRAMMING_EXTRA)
+SCIENCE.extend(SCIENCE_EXTRA)
+TECH.extend(TECH_EXTRA)
+EDUCATION.extend(EDUCATION_EXTRA)
+EXPLAIN.extend(EXPLAIN_EXTRA)
+PROBLEM.extend(PROBLEM_EXTRA)
+HONESTY.extend(HONESTY_EXTRA)
