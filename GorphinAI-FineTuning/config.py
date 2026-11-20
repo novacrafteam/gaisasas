@@ -11,7 +11,7 @@ from typing import List, Optional
 
 PROJECT_DIR = Path(__file__).resolve().parent
 IS_KAGGLE = os.path.exists("/kaggle/working")
-MODEL_ID = "Qwen/Qwen3.5-2B"
+MODEL_ID = "Qwen/Qwen3.5-4B"
 
 # Verified from both the hub checkpoint (Qwen3_5ForConditionalGeneration: model.language_model.layers.*)
 # and AutoModelForCausalLM (Qwen3_5ForCausalLM: model.layers.*):
@@ -116,16 +116,17 @@ class TrainConfig:
 
 
 def preset(name: str) -> TrainConfig:
-    """Presets: 'kaggle' (T4 16GB), 'local' (GTX 1660 Ti, QLoRA, very conservative), 'cpu-test'."""
+    """Presets: 'kaggle' (T4 16GB, QLoRA for 4B), 'local' (GTX 1660 Ti, QLoRA, very conservative), 'cpu-test'."""
     cfg = TrainConfig()
     if name == "kaggle":
+        cfg.use_qlora = True
         cfg.max_seq_length = 1024
-        cfg.per_device_train_batch_size = 2
-        cfg.gradient_accumulation_steps = 8
+        cfg.per_device_train_batch_size = 1
+        cfg.gradient_accumulation_steps = 16
         cfg.dataloader_workers = 2
     elif name == "local":
         cfg.use_qlora = True
-        cfg.max_seq_length = 512
+        cfg.max_seq_length = 384
         cfg.lora_r = 8
         cfg.lora_alpha = 16
         cfg.per_device_train_batch_size = 1

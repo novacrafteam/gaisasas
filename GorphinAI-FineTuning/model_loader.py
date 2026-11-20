@@ -154,7 +154,7 @@ def load_with_adapter(adapter_dir: str | Path, cfg: Optional[TrainConfig] = None
     return model, tok
 
 
-def estimate_memory_gb(cfg: TrainConfig, n_params_b: float = 2.3) -> dict:
+def estimate_memory_gb(cfg: TrainConfig, n_params_b: float = 4.5) -> dict:
     """ROUGH VRAM estimate (GB). Not a guarantee: real usage depends on kernels and sequence content."""
     weights = n_params_b * (0.55 if cfg.use_qlora else 2.0)   # nf4 ~0.5 B/param (+ embeddings in fp16)
     if cfg.use_qlora:

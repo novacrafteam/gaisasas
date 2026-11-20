@@ -7,7 +7,7 @@ def code(s): cells.append({"cell_type": "code", "execution_count": None, "metada
 
 md("""
 # GorphinAI Fine-Tuning on Kaggle
-LoRA/QLoRA SFT of **Qwen/Qwen3.5-2B** (base weights are never modified).
+LoRA/QLoRA SFT of **Qwen/Qwen3.5-4B** (base weights are never modified).
 **Before running:** Settings → Accelerator = *GPU T4 x2* (or T4), Internet = *On*. Run cells top to bottom.
 Everything is stored in `/kaggle/working`. No Google Drive, Gradio or Docker is used.
 """)
@@ -93,7 +93,7 @@ assert torch.cuda.is_available(), "No GPU available"
 code('''
 # ---- 5. Verify the model repo exists (weights are downloaded by train.py) ----
 from huggingface_hub import model_info
-info = model_info("Qwen/Qwen3.5-2B")
+info = model_info("Qwen/Qwen3.5-4B")
 print("Found:", info.id, "| last modified:", info.last_modified)
 ''')
 code('''
